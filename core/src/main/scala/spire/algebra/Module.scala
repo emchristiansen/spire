@@ -1,108 +1,103 @@
-package spire.algebra
+/*
+ * **********************************************************************\
+ * * Project                                                              **
+ * *       ______  ______   __    ______    ____                          **
+ * *      / ____/ / __  /  / /   / __  /   / __/     (c) 2011-2021        **
+ * *     / /__   / /_/ /  / /   / /_/ /   / /_                            **
+ * *    /___  / / ____/  / /   / __  /   / __/   Erik Osheim, Tom Switzer **
+ * *   ____/ / / /      / /   / / | |   / /__                             **
+ * *  /_____/ /_/      /_/   /_/  |_|  /____/     All rights reserved.    **
+ * *                                                                      **
+ * *      Redistribution and use permitted under the MIT license.         **
+ * *                                                                      **
+ * \***********************************************************************
+ */
 
-import spire.macrosk.Ops
-import spire.NoImplicit
-
-import scala.{ specialized => spec }
-import scala.collection.SeqLike
-import scala.collection.generic.CanBuildFrom
-import scala.reflect.ClassTag
+package spire
+package algebra
 
 /**
- * A module generalizes a vector space by requiring its scalar need only form
- * a ring, rather than a field. In Spire, a `Module` is a left R-Module.
+ * A left module is a generalization of a vector space over a field, where the scalars are the elements of a ring (not
+ * necessarily commutative).
+ *
+ * A left module has left multiplication by scalars. Let V be an abelian group (with additive notation) and R the scalar
+ * ring, we have the following laws for x, y in V and r, s in R:
+ *
+ * {{{
+ *   1. r *: (x + y) = r *: x + r *: y
+ *   2. (r + s) *: x = r *: x + s *: x
+ *   3. (r * s) *: x = r *: (s *: x)
+ *   4. R.one * x = x
+ * }}}
+ *
+ * (see https://en.wikipedia.org/wiki/Module_(mathematics) )
+ *
+ * @tparam V
+ *   Abelian group type
+ * @tparam R
+ *   Scalar type
  */
-trait Module[V, @spec(Int,Long,Float,Double) R] extends LeftModule[V, R] with RightModule[V, R] {
-  implicit def scalar: Ring[R] // TODO: Can this be Rng[R] instead?
+trait LeftModule[V, @sp(Int, Long, Float, Double) R] extends Any with AdditiveAbGroup[V] {
+  implicit def scalar: Ring[R] // note: we require a ring with identity (see https://arxiv.org/pdf/1404.0135.pdf)
 
   def timesl(r: R, v: V): V
-  def timesr(v: V, r: R): V = timesl(r, v)
 }
 
-/** 
- * An R-module whose scalar multiplication comes from the left.
- */
-trait LeftModule[V, @spec(Int,Long,Float,Double) R] extends AdditiveAbGroup[V] {
-  implicit def scalar: Ring[R]
-
-  def timesl(r: R, v: V): V
+object LeftModule {
+  @inline final def apply[V, @sp(Int, Long, Float, Double) R](implicit V: LeftModule[V, R]): LeftModule[V, R] = V
 }
 
 /**
- * An R-module whose scalar multiplication comes from the right.
+ * A right module is a generalization of a vector space over a field, where the scalars are the elements of a ring (not
+ * necessarily commutative).
+ *
+ * A right module has right multiplication by scalars. Let V be an abelian group (with additive notation) and R the
+ * scalar ring, we have the following laws for x, y in V and r, s in R:
+ *
+ * {{{
+ *   1. (x + y) :* r = x :* r + y :* r
+ *   2. x :* (r + s) = x :* r + x :* s
+ *   3. x :* (r * s) = (x :* r) :* s
+ *   4. x :* R.one = x
+ * }}}
+ *
+ * @tparam V
+ *   Abelian group type
+ * @tparam R
+ *   Scalar type
  */
-trait RightModule[V, @spec(Int,Long,Float,Double) R] extends AdditiveAbGroup[V] {
-  implicit def scalar: Ring[R]
+trait RightModule[V, @sp(Int, Long, Float, Double) R] extends Any with AdditiveAbGroup[V] {
+  implicit def scalar: Ring[R] // note: we require a ring with identity (see https://arxiv.org/pdf/1404.0135.pdf)
 
   def timesr(v: V, r: R): V
 }
 
-object Module extends Module2 {
-  @inline final def apply[V, @spec(Int,Long,Float,Double) R](implicit V: Module[V, R]) = V
-}
-
-object LeftModule {
-  implicit def module[V, @spec(Int,Long,Float,Double) R](implicit
-      module: Module[V, R]): LeftModule[V, R] = module
-}
-
 object RightModule {
-  implicit def module[V, @spec(Int,Long,Float,Double) R](implicit
-      module: Module[V, R]): RightModule[V, R] = module
+  @inline final def apply[V, @sp(Int, Long, Float, Double) R](implicit V: RightModule[V, R]): RightModule[V, R] = V
 }
 
-final class LeftModuleOps[V, F](rhs: V)(implicit ev: LeftModule[V, F]) {
-  def *: (lhs:F): V = macro Ops.rbinop[F, V]
+// we skip the implementation of bimodules due to the explosion of specialized type parameters
+
+/**
+ * A module over a commutative ring has by definition equivalent left and right modules.
+ *
+ * In addition to the laws above 1-5 left and 1-5 right, we have:
+ *
+ * {{{
+ * 6. (r *: x) :* s = r *: (x :* s)
+ * }}}
+ *
+ * @tparam V
+ *   Abelian group type
+ * @tparam R
+ *   Scalar type
+ */
+trait CModule[V, @sp(Int, Long, Float, Double) R] extends Any with LeftModule[V, R] with RightModule[V, R] {
+  implicit def scalar: CRing[R]
+
+  override def timesr(v: V, r: R): V = timesl(r, v)
 }
 
-final class RightModuleOps[V, F](lhs: V)(implicit ev: RightModule[V, F]) {
-  def :* (rhs:F): V = macro Ops.binop[F, V]
-}
-
-trait Module0 {
-
-  // Note that, unfortunately, I must put a NoImplicit implicit here. I think
-  // this is because Module[CC[A], A] is more specific than Module[V, A], so
-  // this takes precendence over the VectorSpaceIsModule implicit.
-
-  implicit def seq[A, CC[A] <: SeqLike[A, CC[A]]](implicit
-      ring0: Ring[A], cbf0: CanBuildFrom[CC[A], A, CC[A]],
-      ev: NoImplicit[VectorSpace[CC[A], A]]) = new SeqModule[A, CC[A]] {
-    val scalar = ring0
-    val cbf = cbf0
-  }
-
-  implicit def MapModule[K, V](implicit V0: Ring[V],
-      ev: NoImplicit[VectorSpace[Map[K, V], V]]) = new MapRng[K, V] {
-    val scalar = Ring[V]
-  }
-}
-
-trait Module1 extends Module0 {
-  implicit def IdentityModule[@spec(Int,Long,Float,Double) V](implicit ring: Ring[V]) = {
-    new IdentityModule[V] {
-      val scalar = ring
-    }
-  }
-
-  implicit def ArrayModule[@spec(Int,Long,Float,Double) A](implicit
-      ev: NoImplicit[VectorSpace[Array[A], A]], classTag0: ClassTag[A],
-      scalar0: Ring[A]): Module[Array[A], A] = new ArrayModule[A] {
-    val scalar = scalar0
-    val classTag = classTag0
-  }
-}
-
-trait Module2 extends Module1 {
-  implicit def VectorSpaceIsModule[V,@spec(Int,Long,Float,Double) R](implicit
-    vs: VectorSpace[V, R]): Module[V, R] = vs
-}
-
-trait IdentityModule[@spec(Int,Long,Float,Double) V] extends Module[V, V] {
-  def zero = scalar.zero
-  def negate(v: V) = scalar.negate(v)
-  def plus(v: V, w: V): V = scalar.plus(v, w)
-  override def minus(v: V, w: V): V = scalar.minus(v, w)
-
-  def timesl(r: V, v: V): V = scalar.times(r, v)
+object CModule {
+  @inline final def apply[V, @sp(Int, Long, Float, Double) R](implicit V: CModule[V, R]): CModule[V, R] = V
 }

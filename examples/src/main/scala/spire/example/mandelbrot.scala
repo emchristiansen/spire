@@ -1,15 +1,28 @@
-package spire.example
+/*
+ * **********************************************************************\
+ * * Project                                                              **
+ * *       ______  ______   __    ______    ____                          **
+ * *      / ____/ / __  /  / /   / __  /   / __/     (c) 2011-2021        **
+ * *     / /__   / /_/ /  / /   / /_/ /   / /_                            **
+ * *    /___  / / ____/  / /   / __  /   / __/   Erik Osheim, Tom Switzer **
+ * *   ____/ / / /      / /   / / | |   / /__                             **
+ * *  /_____/ /_/      /_/   /_/  |_|  /____/     All rights reserved.    **
+ * *                                                                      **
+ * *      Redistribution and use permitted under the MIT license.         **
+ * *                                                                      **
+ * \***********************************************************************
+ */
+
+package spire
+package example
 
 import spire.implicits._
 import spire.math._
-import spire.syntax._
-
-import scala.annotation.tailrec
 
 object MandelbrotDemo {
+
   /**
-   * Compute whether the complex number c stays contained within a radius-2
-   * circle after 'limit' iterations.
+   * Compute whether the complex number c stays contained within a radius-2 circle after 'limit' iterations.
    */
   def mandelbrot(c: Complex[Double], limit: Int): Int = {
     @tailrec def loop(z: Complex[Double], n: Int): Int =
@@ -23,7 +36,7 @@ object MandelbrotDemo {
   /**
    * Print an ASCII approximation of the 4x4 box from -2-2i to 2+2i.
    */
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val res = 26 // number of iterations to try before including pt in the set
     val rows = if (args.isEmpty) 20 else args(0).toInt // rows to print
     val cols = rows * 2 // cols to print. most fonts are roughly 1:2
@@ -52,8 +65,8 @@ object MandelbrotDemo {
 
 object Xterm {
   // r, g, b should be 0-5
-  def color(r: Int, g: Int, b: Int) = "\033[38;5;%dm" format (16 + b + (g * 6) + (r * 36))
-  def clear() = "\033[0m"
+  def color(r: Int, g: Int, b: Int) = "\u001b[38;5;%dm".format(16 + b + (g * 6) + (r * 36))
+  def clear() = "\u001b[0m"
 
   // given things like rgb(0xffcc99) produce things like color(6, 5, 4)
   def rgb(n: Int) = color(scale(n & 0xff0000), scale(n & 0xff00), scale(n & 0xff))

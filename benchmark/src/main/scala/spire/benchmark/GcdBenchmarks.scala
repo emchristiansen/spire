@@ -1,42 +1,60 @@
-package spire.benchmark
+/*
+ * **********************************************************************\
+ * * Project                                                              **
+ * *       ______  ______   __    ______    ____                          **
+ * *      / ____/ / __  /  / /   / __  /   / __/     (c) 2011-2021        **
+ * *     / /__   / /_/ /  / /   / /_/ /   / /_                            **
+ * *    /___  / / ____/  / /   / __  /   / __/   Erik Osheim, Tom Switzer **
+ * *   ____/ / / /      / /   / / | |   / /__                             **
+ * *  /_____/ /_/      /_/   /_/  |_|  /____/     All rights reserved.    **
+ * *                                                                      **
+ * *      Redistribution and use permitted under the MIT license.         **
+ * *                                                                      **
+ * \***********************************************************************
+ */
 
-import scala.reflect.ClassTag
+package spire
+package benchmark
 
-import scala.annotation.tailrec
-import scala.{specialized => spec}
 import scala.util.Random
 import Random._
 
-import spire.algebra._
-import spire.math._
 import spire.implicits._
-import fpf._
-
-import com.google.caliper.Runner 
-import com.google.caliper.SimpleBenchmark
-import com.google.caliper.Param
 
 import java.lang.Math
 import java.math.BigInteger
 import java.lang.Long.numberOfTrailingZeros
 
-object GcdBenchmarks extends MyRunner(classOf[GcdBenchmarks])
+import java.util.concurrent.TimeUnit
 
-class GcdBenchmarks extends MyBenchmark {
+import org.openjdk.jmh.annotations._
+
+import Arrays.init
+
+@BenchmarkMode(Array(Mode.AverageTime))
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
+@State(Scope.Thread)
+class GcdBenchmarks {
 
   var longs: Array[Long] = null
   var bigs: Array[BigInteger] = null
 
-  override def setUp() {
-    longs = init(200000)(nextLong)
-    bigs = init(200000)(new BigInteger(nextLong.toString))
+  @Setup
+  def setup(): Unit = {
+    longs = init(200000)(nextLong())
+    bigs = init(200000)(new BigInteger(nextLong().toString))
   }
 
-  def timeXorEuclidGcdLong(reps:Int) = run(reps)(xorEuclidGcdLong(longs))
-  def timeXorBinaryGcdLong(reps:Int) = run(reps)(xorBinaryGcdLong(longs))
-  //def timeXorBuiltinGcdBigInteger(reps:Int) = run(reps)(xorBuiltinGcdBigInteger(bigs))
+  @Benchmark
+  def timeXorEuclidGcdLong: Long = xorEuclidGcdLong(longs)
 
-  def xorEuclidGcdLong(data:Array[Long]):Long = {
+  @Benchmark
+  def timeXorBinaryGcdLong: Long = xorBinaryGcdLong(longs)
+
+  @Benchmark
+  def timeXorBuiltinGcdBigInteger: BigInteger = xorBuiltinGcdBigInteger(bigs)
+
+  def xorEuclidGcdLong(data: Array[Long]): Long = {
     var t = 0L
     var i = 0
     val len = data.length - 1
@@ -47,7 +65,7 @@ class GcdBenchmarks extends MyBenchmark {
     t
   }
 
-  def xorBinaryGcdLong(data:Array[Long]):Long = {
+  def xorBinaryGcdLong(data: Array[Long]): Long = {
     var t = 0L
     var i = 0
     val len = data.length - 1
@@ -58,7 +76,7 @@ class GcdBenchmarks extends MyBenchmark {
     t
   }
 
-  def xorBuiltinGcdBigInteger(data:Array[BigInteger]):BigInteger = {
+  def xorBuiltinGcdBigInteger(data: Array[BigInteger]): BigInteger = {
     var t = BigInteger.ZERO
     var i = 0
     val len = data.length - 1
@@ -77,15 +95,15 @@ class GcdBenchmarks extends MyBenchmark {
   def binaryGcdLong(_x: Long, _y: Long): Long = {
     if (_x == 0L) return _y
     if (_y == 0L) return _x
-  
+
     var x = Math.abs(_x)
-    var xz = numberOfTrailingZeros(x)
+    val xz = numberOfTrailingZeros(x)
     x >>= xz
-  
+
     var y = Math.abs(_y)
-    var yz = numberOfTrailingZeros(y)
+    val yz = numberOfTrailingZeros(y)
     y >>= yz
-  
+
     while (x != y) {
       if (x > y) {
         x -= y
@@ -95,8 +113,8 @@ class GcdBenchmarks extends MyBenchmark {
         y >>= numberOfTrailingZeros(y)
       }
     }
-  
+
     if (xz < yz) x << xz else x << yz
   }
-}
 
+}

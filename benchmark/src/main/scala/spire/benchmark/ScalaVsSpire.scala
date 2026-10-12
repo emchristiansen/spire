@@ -1,26 +1,39 @@
-package spire.benchmark
+/*
+ * **********************************************************************\
+ * * Project                                                              **
+ * *       ______  ______   __    ______    ____                          **
+ * *      / ____/ / __  /  / /   / __  /   / __/     (c) 2011-2021        **
+ * *     / /__   / /_/ /  / /   / /_/ /   / /_                            **
+ * *    /___  / / ____/  / /   / __  /   / __/   Erik Osheim, Tom Switzer **
+ * *   ____/ / / /      / /   / / | |   / /__                             **
+ * *  /_____/ /_/      /_/   /_/  |_|  /____/     All rights reserved.    **
+ * *                                                                      **
+ * *      Redistribution and use permitted under the MIT license.         **
+ * *                                                                      **
+ * \***********************************************************************
+ */
 
-import scala.{specialized => spec}
-import scala.annotation.tailrec
+package spire
+package benchmark
+
+import java.util.concurrent.TimeUnit
+
+import org.openjdk.jmh.annotations._
 
 import scala.util.Random
 import Random._
 
 import spire.algebra._
-import spire.math._
-import fpf._
+import spire.implicits._
 
-import spire.math.{Numeric => SpireN}
 import scala.math.{Numeric => ScalaN}
+import Arrays.init
 
-import com.google.caliper.Runner 
-import com.google.caliper.SimpleBenchmark
-import com.google.caliper.Param
-
-object ScalaVsSpireBenchmarks extends MyRunner(classOf[ScalaVsSpireBenchmarks])
-
-class ScalaVsSpireBenchmarks extends MyBenchmark {
-  //@Param(Array("10", "15", "20", "25"))
+@BenchmarkMode(Array(Mode.AverageTime))
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
+@State(Scope.Thread)
+class ScalaVsSpireBenchmarks {
+  // @Param(Array("10", "15", "20", "25"))
   @Param(Array("20"))
   var pow: Int = 0
 
@@ -30,52 +43,103 @@ class ScalaVsSpireBenchmarks extends MyBenchmark {
   var bs: Array[Int] = null
   var cs: Array[Int] = null
 
-  override protected def setUp() {
+  @Setup
+  def setup(): Unit = {
     size = spire.math.pow(2, pow).toInt
-    //as = init(size)(scala.math.abs(nextInt).toInt % 1000 + 1)
-    //bs = init(size)(scala.math.abs(nextInt).toInt % 1000 + 1)
-    as = init(size)(scala.math.abs(nextInt).toInt % 100000 + 1)
-    bs = init(size)(scala.math.abs(nextInt).toInt % 100000 + 1)
+    as = init(size)(scala.math.abs(nextInt()) % 100000 + 1)
+    bs = init(size)(scala.math.abs(nextInt()) % 100000 + 1)
     cs = new Array(size)
   }
 
-  def timePairwiseDirect(reps:Int) = run(reps)(doPairwiseDirect(as, bs, cs))
-  def timePairwiseGeneric(reps:Int) = run(reps)(doPairwiseGeneric(as, bs, cs))
-  def timePairwiseSpire(reps:Int) = run(reps)(doPairwiseSpire(as, bs, cs))
-  
-  def timeIncrementDirect(reps:Int) = run(reps)(doIncrementDirect(0, size))
-  def timeIncrementGeneric(reps:Int) = run(reps)(doIncrementGeneric(0, size))
-  def timeIncrementSpire(reps:Int) = run(reps)(doIncrementSpire(0, size))
-  
-  def timeMinMaxDirect(reps:Int) = run(reps)(doMinMaxDirect(as))
-  def timeMinMaxGeneric(reps:Int) = run(reps)(doMinMaxGeneric(as))
-  def timeMinMaxSpire(reps:Int) = run(reps)(doMinMaxSpire(as))
+  @Benchmark
+  def timePairwiseDirect: Array[Int] = {
+    doPairwiseDirect(as, bs, cs)
+    cs
+  }
 
-  def timeGcdDirect(reps:Int) = run(reps)(doGcdDirect(as, bs, cs))
-  def timeGcdGeneric(reps:Int) = run(reps)(doGcdGeneric(as, bs, cs))
-  def timeGcdSpire(reps:Int) = run(reps)(doGcdSpire(as, bs, cs))
+  @Benchmark
+  def timePairwiseGeneric: Array[Int] = {
+    doPairwiseGeneric(as, bs, cs)
+    cs
+  }
 
-  def timeScaleDirect(reps:Int) = run(reps)(doScaleDirect(as, 9, 4, cs))
-  def timeScaleGeneric(reps:Int) = run(reps)(doScaleGeneric(as, 9, 4, cs))
-  def timeScaleSpire(reps:Int) = run(reps)(doScaleSpire(as, 9, 4, cs))
+  @Benchmark
+  def timePairwiseSpire: Array[Int] = {
+    doPairwiseSpire(as, bs, cs)
+    cs
+  }
+
+  @Benchmark
+  def timeIncrementDirect: Int = doIncrementDirect(0, size)
+
+  @Benchmark
+  def timeIncrementGeneric: Int = doIncrementGeneric(0, size)
+
+  @Benchmark
+  def timeIncrementSpire: Int = doIncrementSpire(0, size)
+
+  @Benchmark
+  def timeMinMaxDirect: (Int, Int) = doMinMaxDirect(as)
+
+  @Benchmark
+  def timeMinMaxGeneric: (Int, Int) = doMinMaxGeneric(as)
+
+  @Benchmark
+  def timeMinMaxSpire: (Int, Int) = doMinMaxSpire(as)
+
+  @Benchmark
+  def timeGcdDirect: Array[Int] = {
+    doGcdDirect(as, bs, cs)
+    cs
+  }
+
+  @Benchmark
+  def timeGcdGeneric: Array[Int] = {
+    doGcdGeneric(as, bs, cs)
+    cs
+  }
+
+  @Benchmark
+  def timeGcdSpire: Array[Int] = {
+    doGcdSpire(as, bs, cs)
+    cs
+  }
+
+  @Benchmark
+  def timeScaleDirect: Array[Int] = {
+    doScaleDirect(as, 9, 4, cs)
+    cs
+  }
+
+  @Benchmark
+  def timeScaleGeneric: Array[Int] = {
+    doScaleGeneric(as, 9, 4, cs)
+    cs
+  }
+
+  @Benchmark
+  def timeScaleSpire: Array[Int] = {
+    doScaleSpire(as, 9, 4, cs)
+    cs
+  }
 
   /**
    * Pairwise addition between arrays
    */
-  def doPairwiseDirect(as: Array[Int], bs: Array[Int], cs: Array[Int]) {
+  def doPairwiseDirect(as: Array[Int], bs: Array[Int], cs: Array[Int]): Unit = {
     var i = 0
     val len = as.length
     while (i < len) { cs(i) = as(i) + bs(i); i += 1 }
   }
 
-  def doPairwiseGeneric[A:ScalaN](as:Array[A], bs: Array[A], cs: Array[A]) {
+  def doPairwiseGeneric[A: ScalaN](as: Array[A], bs: Array[A], cs: Array[A]): Unit = {
     import ScalaN.Implicits._
     var i = 0
     val len = as.length
     while (i < len) { cs(i) = as(i) + bs(i); i += 1 }
   }
 
-  def doPairwiseSpire[@spec(Int) A:Ring](as:Array[A], bs: Array[A], cs: Array[A]) {
+  def doPairwiseSpire[@sp(Int) A: Ring](as: Array[A], bs: Array[A], cs: Array[A]): Unit = {
     import spire.implicits._
     var i = 0
     val len = as.length
@@ -85,14 +149,14 @@ class ScalaVsSpireBenchmarks extends MyBenchmark {
   /**
    * Simple incrementing counter
    */
-  def doIncrementDirect(start: Int, n: Int) = {
+  def doIncrementDirect(start: Int, n: Int): Int = {
     var t = start
     var i = 0
     while (i < n) { t += 1; i += 1 }
     t
   }
 
-  def doIncrementGeneric[A:ScalaN](start: A, n: A) = {
+  def doIncrementGeneric[A: ScalaN](start: A, n: A): A = {
     import ScalaN.Implicits._
     val ev = implicitly[ScalaN[A]]
     import ev.mkOrderingOps
@@ -102,7 +166,7 @@ class ScalaVsSpireBenchmarks extends MyBenchmark {
     t
   }
 
-  def doIncrementSpire[@spec(Int) A:Ring:Order](start: A, n: A) = {
+  def doIncrementSpire[@sp(Int) A: Ring: Order](start: A, n: A): A = {
     import spire.implicits._
     val ev = Ring[A]
     var t = start
@@ -114,7 +178,7 @@ class ScalaVsSpireBenchmarks extends MyBenchmark {
   /**
    * Find min/max values.
    */
-  def doMinMaxDirect(ns: Array[Int]) = {
+  def doMinMaxDirect(ns: Array[Int]): (Int, Int) = {
     var zmin = ns(0)
     var zmax = ns(0)
     var i = 1
@@ -128,7 +192,7 @@ class ScalaVsSpireBenchmarks extends MyBenchmark {
     (zmin, zmax)
   }
 
-  def doMinMaxGeneric[A:ScalaN](ns: Array[A]) = {
+  def doMinMaxGeneric[A: ScalaN](ns: Array[A]): (A, A) = {
     val ev = implicitly[ScalaN[A]]
     import ev.mkOrderingOps
 
@@ -145,7 +209,7 @@ class ScalaVsSpireBenchmarks extends MyBenchmark {
     (zmin, zmax)
   }
 
-  def doMinMaxSpire[@spec(Int) A:Ring:Order](ns: Array[A]) = {
+  def doMinMaxSpire[@sp(Int) A: Ring: Order](ns: Array[A]): (A, A) = {
     import spire.implicits._
 
     var zmin = ns(0)
@@ -167,30 +231,29 @@ class ScalaVsSpireBenchmarks extends MyBenchmark {
   @tailrec final def gcdDirect(a: Int, b: Int): Int =
     if (a % b == 0) b else gcdDirect(b, a % b)
 
-  def doGcdDirect(as: Array[Int], bs: Array[Int], cs: Array[Int]) = {
+  def doGcdDirect(as: Array[Int], bs: Array[Int], cs: Array[Int]): Unit = {
     var i = 0
     val len = as.length
     while (i < len) { cs(i) = gcdDirect(as(i), bs(i)); i += 1 }
   }
 
   import scala.math.{Integral => ScalaI}
-  @tailrec final def gcdGeneric[A](a: A, b: A)(implicit ev:ScalaI[A]): A = {
+  @tailrec final def gcdGeneric[A](a: A, b: A)(implicit ev: ScalaI[A]): A = {
     import ScalaI.Implicits._
     if (a % b == ev.zero) b else gcdGeneric(b, a % b)
   }
 
-  def doGcdGeneric[A:ScalaI](as: Array[A], bs: Array[A], cs: Array[A]) = {
+  def doGcdGeneric[A: ScalaI](as: Array[A], bs: Array[A], cs: Array[A]): Unit = {
     var i = 0
     val len = as.length
     while (i < len) { cs(i) = gcdGeneric(as(i), bs(i)); i += 1 }
   }
 
-  @tailrec final def gcdSpire[@spec(Int) A](a: A, b: A)(implicit ev1:EuclideanRing[A], ev2:Eq[A]): A = {
-    import spire.implicits._
-    if (a % b === ev1.zero) b else gcdSpire(b, a % b)
+  @tailrec final def gcdSpire[@sp(Int) A](a: A, b: A)(implicit ev1: EuclideanRing[A], ev2: Eq[A]): A = {
+    if ((a.emod(b)) === ev1.zero) b else gcdSpire(b, a.emod(b))
   }
 
-  def doGcdSpire[@spec(Int) A:EuclideanRing:Eq](as: Array[A], bs: Array[A], cs: Array[A]) = {
+  def doGcdSpire[@sp(Int) A: EuclideanRing: Eq](as: Array[A], bs: Array[A], cs: Array[A]): Unit = {
     var i = 0
     val len = as.length
     while (i < len) { cs(i) = gcdSpire(as(i), bs(i)); i += 1 }
@@ -199,24 +262,24 @@ class ScalaVsSpireBenchmarks extends MyBenchmark {
   /**
    * Scale array.
    */
-  def doScaleDirect(as: Array[Int], n: Int, d: Int, cs: Array[Int]) = {
+  def doScaleDirect(as: Array[Int], n: Int, d: Int, cs: Array[Int]): Unit = {
     var i = 0
     val len = as.length
-    while (i < len) { cs(i) = as(i) * n / d; i += 1}
+    while (i < len) { cs(i) = as(i) * n / d; i += 1 }
   }
 
-  def doScaleGeneric[A:ScalaI](as: Array[A], n: A, d: A, cs: Array[A]) = {
+  def doScaleGeneric[A: ScalaI](as: Array[A], n: A, d: A, cs: Array[A]): Unit = {
     import ScalaI.Implicits._
     var i = 0
     val len = as.length
-    while (i < len) { cs(i) = as(i) * n / d; i += 1}
+    while (i < len) { cs(i) = as(i) * n / d; i += 1 }
   }
 
-  def doScaleSpire[@spec(Int) A:EuclideanRing](as: Array[A], n: A, d: A, cs: Array[A]) = {
+  def doScaleSpire[@sp(Int) A: EuclideanRing](as: Array[A], n: A, d: A, cs: Array[A]): Unit = {
     import spire.implicits._
     var i = 0
     val len = as.length
-    while (i < len) { cs(i) = as(i) * n /~ d; i += 1}
+    while (i < len) { cs(i) = (as(i) * n).equot(d); i += 1 }
   }
 }
 
@@ -227,7 +290,7 @@ class ScalaVsSpireBenchmarks extends MyBenchmark {
 //}
 //
 //object Spire {
-//  @tailrec final def gcd[@spec(Int) A: Integral](a: A, b: A): A =
+//  @tailrec final def gcd[@sp(Int) A: Integral](a: A, b: A): A =
 //    if (a % b === Integral[A].zero) b else gcd(b, a % b)
 //}
 //

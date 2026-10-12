@@ -1,17 +1,31 @@
-package spire.algebra
+/*
+ * **********************************************************************\
+ * * Project                                                              **
+ * *       ______  ______   __    ______    ____                          **
+ * *      / ____/ / __  /  / /   / __  /   / __/     (c) 2011-2021        **
+ * *     / /__   / /_/ /  / /   / /_/ /   / /_                            **
+ * *    /___  / / ____/  / /   / __  /   / __/   Erik Osheim, Tom Switzer **
+ * *   ____/ / / /      / /   / / | |   / /__                             **
+ * *  /_____/ /_/      /_/   /_/  |_|  /____/     All rights reserved.    **
+ * *                                                                      **
+ * *      Redistribution and use permitted under the MIT license.         **
+ * *                                                                      **
+ * \***********************************************************************
+ */
 
-import spire.macrosk.Ops
+package spire
+package algebra
 
-import scala.{ specialized => spec }
-import scala.collection.SeqLike
-import scala.collection.generic.CanBuildFrom
-import scala.reflect.ClassTag
-import scala.annotation.tailrec
+import spire.std._
 
-trait CoordinateSpace[V, @spec(Float, Double) F] extends InnerProductSpace[V, F] {
+import scala.collection.Factory
+import scala.collection.Seq
+import scala.collection.SeqOps
+
+trait CoordinateSpace[V, @sp(Float, Double) F] extends Any with InnerProductSpace[V, F] {
   def dimensions: Int
 
-  def coord(v: V, i: Int): F  // = v dot axis(i)
+  def coord(v: V, i: Int): F // = v dot axis(i)
 
   def axis(i: Int): V
 
@@ -33,36 +47,12 @@ trait CoordinateSpace[V, @spec(Float, Double) F] extends InnerProductSpace[V, F]
 }
 
 object CoordinateSpace {
-  @inline final def apply[V, @spec(Float,Double) F](implicit V: CoordinateSpace[V, F]) = V
+  @inline final def apply[V, @sp(Float, Double) F](implicit V: CoordinateSpace[V, F]): CoordinateSpace[V, F] = V
 
-  def seq[A, CC[A] <: SeqLike[A, CC[A]]](dimensions0: Int)(implicit field0: Field[A],
-      cbf0: CanBuildFrom[CC[A], A, CC[A]]) = new SeqCoordinateSpace[A, CC[A]] {
-    val scalar = field0
-    val cbf = cbf0
-    val dimensions = dimensions0
-  }
+  def seq[A: Field, CC[A] <: SeqOps[A, Seq, CC[A]]](dimensions: Int)(implicit
+    cbf0: Factory[A, CC[A]]
+  ): SeqCoordinateSpace[A, CC[A]] = new SeqCoordinateSpace[A, CC[A]](dimensions)
 
-  def array[@spec(Float, Double) A](dimensions0: Int)(implicit field0: Field[A],
-      classTag0: ClassTag[A]) = new ArrayCoordinateSpace[A] {
-    val scalar = field0
-    val dimensions = dimensions0
-    val classTag = classTag0
-  }
-}
-
-final class CoordinateSpaceOps[V](v: V) {
-  def _x[F](implicit ev: CoordinateSpace[V, F]): F =
-    macro Ops.unopWithEv[CoordinateSpace[V, F], F]
-
-  def _y[F](implicit ev: CoordinateSpace[V, F]): F =
-    macro Ops.unopWithEv[CoordinateSpace[V, F], F]
-
-  def _z[F](implicit ev: CoordinateSpace[V, F]): F =
-    macro Ops.unopWithEv[CoordinateSpace[V, F], F]
-
-  def coord[F](rhs: Int)(implicit ev: CoordinateSpace[V, F]): F =
-    macro Ops.binopWithEv[Int, CoordinateSpace[V, F], F]
-
-  def dimensions[F](implicit ev: CoordinateSpace[V, F]): Int =
-    macro Ops.unopWithEv[CoordinateSpace[V, F], Int]
+  def array[@sp(Float, Double) A: Field: ClassTag](dimensions: Int): CoordinateSpace[Array[A], A] =
+    new ArrayCoordinateSpace[A](dimensions)
 }

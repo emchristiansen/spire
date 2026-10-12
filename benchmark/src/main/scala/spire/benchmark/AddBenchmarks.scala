@@ -1,28 +1,34 @@
-package spire.benchmark
+/*
+ * **********************************************************************\
+ * * Project                                                              **
+ * *       ______  ______   __    ______    ____                          **
+ * *      / ____/ / __  /  / /   / __  /   / __/     (c) 2011-2021        **
+ * *     / /__   / /_/ /  / /   / /_/ /   / /_                            **
+ * *    /___  / / ____/  / /   / __  /   / __/   Erik Osheim, Tom Switzer **
+ * *   ____/ / / /      / /   / / | |   / /__                             **
+ * *  /_____/ /_/      /_/   /_/  |_|  /____/     All rights reserved.    **
+ * *                                                                      **
+ * *      Redistribution and use permitted under the MIT license.         **
+ * *                                                                      **
+ * \***********************************************************************
+ */
 
-import scala.reflect.ClassTag
+package spire
+package benchmark
 
-import scala.annotation.tailrec
-import scala.{specialized => spec}
-import scala.util.Random
-import Random._
+import java.util.concurrent.TimeUnit
 
+import org.openjdk.jmh.annotations._
 import spire.algebra._
-import spire.math._
+import spire.benchmark.Arrays._
 import spire.implicits._
-import fpf._
+import spire.math._
 
-import com.google.caliper.Runner 
-import com.google.caliper.SimpleBenchmark
-import com.google.caliper.Param
+@BenchmarkMode(Array(Mode.AverageTime))
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
+class AddBenchmarks {
 
-import java.lang.Math
-import java.math.BigInteger
-
-object AddBenchmarks extends MyRunner(classOf[AddBenchmarks])
-
-class AddBenchmarks extends MyBenchmark with BenchmarkData {
-  def addGeneric[@spec(Int, Long, Float, Double) A:Ring](data:Array[A]):A = {
+  def addGeneric[@sp(Int, Long, Float, Double) A: Ring](data: Array[A]): A = {
     var total = Ring[A].zero
     var i = 0
     val len = data.length
@@ -30,60 +36,88 @@ class AddBenchmarks extends MyBenchmark with BenchmarkData {
     total
   }
 
-  def addIntsDirect(data:Array[Int]):Int = {
+  def addFastComplex(data: Array[Long]): Long = {
+    var total = FastComplex(0.0f, 0.0f)
+    var i = 0
+    val len = data.length
+    while (i < len) { total = FastComplex.add(total, data(i)); i += 1 }
+    total
+  }
+
+  @Benchmark
+  def addIntDirect(state: IntState): Int = {
+    val data = state.values
     var total = 0
     var i = 0
     val len = data.length
     while (i < len) { total += data(i); i += 1 }
     total
   }
+  @Benchmark
+  def addIntGeneric(state: IntState): Int = addGeneric(state.values)
 
-  def addLongsDirect(data:Array[Long]):Long = {
+  @Benchmark
+  def addLongDirect(state: LongState): Long = {
+    val data = state.values
     var total = 0L
     var i = 0
     val len = data.length
     while (i < len) { total += data(i); i += 1 }
     total
   }
+  @Benchmark
+  def addLongGeneric(state: LongState): Long = addGeneric(state.values)
 
-  def addFloatsDirect(data:Array[Float]):Float = {
-    var total = 0.0F
+  @Benchmark
+  def addFloatDirect(state: FloatState): Float = {
+    val data = state.values
+    var total = 0.0f
     var i = 0
     val len = data.length
     while (i < len) { total += data(i); i += 1 }
     total
-  }
 
-  def addDoublesDirect(data:Array[Double]):Double = {
+  }
+  @Benchmark
+  def addFloatGeneric(state: FloatState): Float = addGeneric(state.values)
+
+  @Benchmark
+  def addDoubleDirect(state: DoubleState): Double = {
+    val data = state.values
     var total = 0.0
     var i = 0
     val len = data.length
     while (i < len) { total += data(i); i += 1 }
     total
   }
+  @Benchmark
+  def addDoublesGeneric(state: DoubleState): Double = addGeneric(state.values)
 
-  def addMaybeDoublesDirect(data: Array[MaybeDouble]): MaybeDouble = {
-    var total = MaybeDouble(0.0)
+  @Benchmark
+  def addComplexFloatStateDirect(state: ComplexFloatState): Complex[Float] = {
+    val data = state.values
+    var total = Complex.zero[Float]
     var i = 0
     val len = data.length
     while (i < len) { total += data(i); i += 1 }
     total
   }
+  @Benchmark
+  def addComplexFloatStateGeneric(state: ComplexFloatState): Complex[Float] = addGeneric(state.values)
 
-  def addFastMaybeFloatsDirect(data: Array[Long]): Long = {
-    var total = FastMaybeFloat(0f)
+  @Benchmark
+  def addFastComplexDirect(state: FastComplexState): Long = {
+    val data = state.values
+    var total = FastComplex(0.0f, 0.0f)
     var i = 0
-    val len = data.length - 1
-
-    // This is slightly different from the others, because it'll overflow the
-    // FastMaybeFloat and apparently adding NaNs and Infinities is quite a bit
-    // slower than regular fp ops.
-    
-    while (i < len) { total += FastMaybeFloat.plus(data(i), data(i + 1)); i += 1 }
+    val len = data.length
+    while (i < len) { total = FastComplex.add(total, data(i)); i += 1 }
     total
   }
 
-  def addComplexesDirect(data:Array[Complex[Double]]):Complex[Double] = {
+  @Benchmark
+  def addComplexDoubleStateDirect(state: ComplexDoubleState): Complex[Double] = {
+    val data = state.values
     var total = Complex.zero[Double]
     var i = 0
     val len = data.length
@@ -91,29 +125,7 @@ class AddBenchmarks extends MyBenchmark with BenchmarkData {
     total
   }
 
-  def addFastComplexes(data:Array[Long]):Long = {
-    var total = FastComplex(0.0F, 0.0F)
-    var i = 0
-    val len = data.length
-    while (i < len) { total = FastComplex.add(total, data(i)); i += 1 }
-    total
-  }
+  @Benchmark
+  def addComplexDoubleStateGeneric(state: ComplexDoubleState): Complex[Double] = addGeneric(state.values)
 
-  def timeAddIntsDirect(reps:Int) = run(reps)(addIntsDirect(ints))
-  def timeAddIntsGeneric(reps:Int) = run(reps)(addGeneric(ints))
-  
-  def timeAddLongsDirect(reps:Int) = run(reps)(addLongsDirect(longs))
-  def timeAddLongsGeneric(reps:Int) = run(reps)(addGeneric(longs))
-  
-  def timeAddFloatsDirect(reps:Int) = run(reps)(addFloatsDirect(floats))
-  def timeAddFloatsGeneric(reps:Int) = run(reps)(addGeneric(floats))
-  def timeAddFastMaybeFloatsDirect(reps:Int) = run(reps)(addFastMaybeFloatsDirect(maybeFloats))
-  
-  def timeAddDoublesDirect(reps:Int) = run(reps)(addDoublesDirect(doubles))
-  def timeAddDoublesGeneric(reps:Int) = run(reps)(addGeneric(doubles))
-  def timeAddMaybeDoublesDirect(reps:Int) = run(reps)(addMaybeDoublesDirect(maybeDoubles))
-
-  def timeAddComplexesDirect(reps:Int) = run(reps)(addComplexesDirect(complexes))
-  def timeAddComplexesGeneric(reps:Int) = run(reps)(addGeneric(complexes))
-  def timeAddFastComplexes(reps:Int) = run(reps)(addFastComplexes(fcomplexes))
 }

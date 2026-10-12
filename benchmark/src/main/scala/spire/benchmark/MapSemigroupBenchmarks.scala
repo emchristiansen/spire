@@ -1,14 +1,27 @@
-package spire.benchmark
+/*
+ * **********************************************************************\
+ * * Project                                                              **
+ * *       ______  ______   __    ______    ____                          **
+ * *      / ____/ / __  /  / /   / __  /   / __/     (c) 2011-2021        **
+ * *     / /__   / /_/ /  / /   / /_/ /   / /_                            **
+ * *    /___  / / ____/  / /   / __  /   / __/   Erik Osheim, Tom Switzer **
+ * *   ____/ / / /      / /   / / | |   / /__                             **
+ * *  /_____/ /_/      /_/   /_/  |_|  /____/     All rights reserved.    **
+ * *                                                                      **
+ * *      Redistribution and use permitted under the MIT license.         **
+ * *                                                                      **
+ * \***********************************************************************
+ */
 
+package spire
+package benchmark
+/*
 import spire.algebra._
-import spire.math._
 import spire.implicits._
-import spire.algebra.map._
 
-import com.google.caliper.{ Runner, SimpleBenchmark, Param }
+import com.google.caliper.Param
 
 import scala.util.Random._
-import scala.annotation.tailrec
 
 object MapSemigroupBenchmarks extends MyRunner(classOf[MapSemigroupBenchmarks])
 
@@ -23,9 +36,9 @@ class MapSemigroupBenchmarks extends MyBenchmark with BenchmarkData {
   //}
 
   /**
-   * Original code from Algebird, though without the isNonZero stuff. That is
-   * not, in general, deciable.
-   */
+ * Original code from Algebird, though without the isNonZero stuff. That is
+ * not, in general, deciable.
+ */
   def algebirdAdd[K, V](x: Map[K, V], y: Map[K, V])(implicit
       semigroup: Semigroup[V], eq: Eq[V]): Map[K, V] = {
     val (big, small, bigOnLeft) = if(x.size > y.size) { (x,y,true) } else { (y,x,false) }
@@ -34,9 +47,9 @@ class MapSemigroupBenchmarks extends MyBenchmark with BenchmarkData {
         .get(kv._1)
         .map { bigV =>
           if(bigOnLeft)
-            semigroup.op(bigV, kv._2)
+            semigroup.combine(bigV, kv._2)
           else
-            semigroup.op(kv._2, bigV)
+            semigroup.combine(kv._2, bigV)
         }
         .getOrElse(kv._2)
       oldMap + (kv._1 -> newV)
@@ -49,7 +62,7 @@ class MapSemigroupBenchmarks extends MyBenchmark with BenchmarkData {
       semigroup: Semigroup[V]): Map[K, V] = {
     y.foldLeft(x) { case (z, kv) =>
       z + ((kv._1, (x get kv._1) match {
-        case Some(u) => if (flip) semigroup.op(kv._2, u) else semigroup.op(u, kv._2)
+        case Some(u) => if (flip) semigroup.combine(kv._2, u) else semigroup.combine(u, kv._2)
         case None => kv._2
       }))
     }
@@ -82,7 +95,7 @@ class MapSemigroupBenchmarks extends MyBenchmark with BenchmarkData {
     arr
   }
 
-  override protected def setUp() {
+  override protected def setUp(): Unit = {
     if (mapType == "random") {
       maps = genMaps { i => (nextInt, nextInt) }
     } else if (mapType == "sparse") {
@@ -94,8 +107,8 @@ class MapSemigroupBenchmarks extends MyBenchmark with BenchmarkData {
     }
   }
 
-  implicit val semigroup = new Semigroup[Int] {
-    def op(x: Int, y: Int): Int = x + y
+  implicit val semigroup: Semigroup[Int] = new Semigroup[Int] {
+    def combine(x: Int, y: Int): Int = x + y
   }
 
   def timeAlgebirdMapAdd(reps: Int) = run(reps) {
@@ -125,3 +138,4 @@ class MapSemigroupBenchmarks extends MyBenchmark with BenchmarkData {
     }
   }
 }
+ */

@@ -1,8 +1,24 @@
-package spire.benchmark
+/*
+ * **********************************************************************\
+ * * Project                                                              **
+ * *       ______  ______   __    ______    ____                          **
+ * *      / ____/ / __  /  / /   / __  /   / __/     (c) 2011-2021        **
+ * *     / /__   / /_/ /  / /   / /_/ /   / /_                            **
+ * *    /___  / / ____/  / /   / __  /   / __/   Erik Osheim, Tom Switzer **
+ * *   ____/ / / /      / /   / / | |   / /__                             **
+ * *  /_____/ /_/      /_/   /_/  |_|  /____/     All rights reserved.    **
+ * *                                                                      **
+ * *      Redistribution and use permitted under the MIT license.         **
+ * *                                                                      **
+ * \***********************************************************************
+ */
+
+package spire
+package benchmark
 
 object BigIntRational {
-  val Zero = new BigIntRational(0, 1)
-  val One = new BigIntRational(1, 1)
+  val zero = new BigIntRational(0, 1)
+  val one = new BigIntRational(1, 1)
 
   def apply(n: BigInt, d: BigInt): BigIntRational = {
     val gcd = n.gcd(d)
@@ -15,7 +31,7 @@ object BigIntRational {
 }
 
 final class BigIntRational private (val n: BigInt, val d: BigInt) {
-  def unary_-(): BigIntRational = new BigIntRational(-n, d)
+  def unary_- : BigIntRational = new BigIntRational(-n, d)
 
   def +(r: BigIntRational): BigIntRational = {
     val dgcd: BigInt = d.gcd(r.d)
@@ -33,7 +49,6 @@ final class BigIntRational private (val n: BigInt, val d: BigInt) {
     }
   }
 
-
   def -(r: BigIntRational): BigIntRational = {
     val dgcd: BigInt = d.gcd(r.d)
     if (dgcd == 1) {
@@ -50,13 +65,11 @@ final class BigIntRational private (val n: BigInt, val d: BigInt) {
     }
   }
 
-
   def *(r: BigIntRational): BigIntRational = {
     val a = n.gcd(r.d)
     val b = d.gcd(r.n)
     new BigIntRational((n / a) * (r.n / b), (d / b) * (r.d / a))
   }
-  
 
   def /(r: BigIntRational): BigIntRational = {
     val a = n.gcd(r.n)
@@ -71,11 +84,11 @@ final class BigIntRational private (val n: BigInt, val d: BigInt) {
   }
 
   def pow(exp: Int): BigIntRational = if (exp == 0) {
-    BigIntRational.One
+    BigIntRational.one
   } else if (exp < 0) {
-    new BigIntRational(d pow exp.abs, n pow exp.abs)
+    new BigIntRational(d.pow(exp.abs), n.pow(exp.abs))
   } else {
-    new BigIntRational(n pow exp, d pow exp)
+    new BigIntRational(n.pow(exp), d.pow(exp))
   }
 
   def compare(r: BigIntRational): Int = {
@@ -87,4 +100,5 @@ final class BigIntRational private (val n: BigInt, val d: BigInt) {
   }
 
   def signum: Int = n.signum
+
 }

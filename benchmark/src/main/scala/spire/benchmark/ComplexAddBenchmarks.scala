@@ -1,36 +1,50 @@
-package spire.benchmark
+/*
+ * **********************************************************************\
+ * * Project                                                              **
+ * *       ______  ______   __    ______    ____                          **
+ * *      / ____/ / __  /  / /   / __  /   / __/     (c) 2011-2021        **
+ * *     / /__   / /_/ /  / /   / /_/ /   / /_                            **
+ * *    /___  / / ____/  / /   / __  /   / __/   Erik Osheim, Tom Switzer **
+ * *   ____/ / / /      / /   / / | |   / /__                             **
+ * *  /_____/ /_/      /_/   /_/  |_|  /____/     All rights reserved.    **
+ * *                                                                      **
+ * *      Redistribution and use permitted under the MIT license.         **
+ * *                                                                      **
+ * \***********************************************************************
+ */
 
-import scala.{specialized => spec}
+package spire
+package benchmark
+import java.util.concurrent.TimeUnit
+
 import scala.util.Random
 import Random._
-
+import org.openjdk.jmh.annotations._
 import spire.algebra._
 import spire.math._
 import spire.implicits._
-import fpf._
+import spire.benchmark.Arrays.init
+import spire.benchmark.Arrays.FloatState
 
-import com.google.caliper.Runner 
-import com.google.caliper.SimpleBenchmark
-import com.google.caliper.Param
+@BenchmarkMode(Array(Mode.AverageTime))
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
+@State(Scope.Thread)
+class ComplexAddBenchmarks {
+  @Param(Array("500000", "1000000", "2000000", "4000000", "8000000", "16000000"))
+  var size: Int = 0
 
-object ComplexAddBenchmarks extends MyRunner(classOf[ComplexAddBenchmarks])
+  var complexes: Array[Complex[Float]] = null
+  var longs: Array[Long] = null
+  var fcs: Array[FloatComplex] = null
 
-class ComplexAddBenchmarks extends MyBenchmark {
-  //@Param(Array("500000", "1000000", "2000000", "4000000", "8000000", "16000000"))
-  @Param(Array("500000"))
-  var size:Int = 0
-
-  var complexes:Array[Complex[Float]] = null
-  var longs:Array[Long] = null
-  var fcs:Array[FloatComplex] = null
-
-  override protected def setUp() {
+  @Setup
+  def setup(): Unit = {
     complexes = init(size)(Complex(nextFloat(), nextFloat()))
     longs = init(size)(FastComplex(nextFloat(), nextFloat()))
     fcs = init(size)(FloatComplex(nextFloat(), nextFloat()))
   }
 
-  def addGeneric[@spec(Float) A:Ring](data:Array[A]):A = {
+  def addGeneric[@sp(Float) A: Ring](data: Array[A]): A = {
     var total = Ring[A].zero
     var i = 0
     val len = data.length
@@ -38,41 +52,43 @@ class ComplexAddBenchmarks extends MyBenchmark {
     total
   }
 
-  def addComplexesDirect(data:Array[Complex[Float]]):Complex[Float] = {
+  @Benchmark
+  def addFloatGeneric(state: FloatState): Float = addGeneric(state.values)
+
+  @Benchmark
+  def addComplexesDirect(): Complex[Float] = {
     var total = Complex.zero[Float]
     var i = 0
-    val len = data.length
-    while (i < len) { total += data(i); i += 1 }
+    val len = complexes.length
+    while (i < len) { total += complexes(i); i += 1 }
     total
   }
 
-  def addFastComplexes(data:Array[Long]):Long = {
-    var total = FastComplex(0.0F, 0.0F)
+  @Benchmark
+  def addFastComplexes(): Long = {
+    var total = FastComplex(0.0f, 0.0f)
     var i = 0
-    val len = data.length
-    while (i < len) { total = FastComplex.add(total, data(i)); i += 1 }
+    val len = longs.length
+    while (i < len) { total = FastComplex.add(total, longs(i)); i += 1 }
     total
   }
 
-  def addFloatComplexesBoxed(data:Array[FloatComplex]):FloatComplex = {
-    var total = FloatComplex(0.0F, 0.0F)
+  @Benchmark
+  def addFloatComplexesBoxed(): FloatComplex = {
+    var total = FloatComplex(0.0f, 0.0f)
     var i = 0
     val len = fcs.length
     while (i < len) { total += fcs(i); i += 1 }
     total
   }
 
-  def addFloatComplexesUnboxed(data:Array[Long]):FloatComplex = {
-    var total = FloatComplex(0.0F, 0.0F)
+  @Benchmark
+  def addFloatComplexesUnboxed(): FloatComplex = {
+    var total = FloatComplex(0.0f, 0.0f)
     var i = 0
     val len = fcs.length
     while (i < len) { total += new FloatComplex(longs(i)); i += 1 }
     total
   }
 
-  def timeAddComplexesDirect(reps:Int) = run(reps)(addComplexesDirect(complexes))
-  def timeAddComplexesGeneric(reps:Int) = run(reps)(addGeneric(complexes))
-  def timeAddFastComplexes(reps:Int) = run(reps)(addFastComplexes(longs))
-  def timeAddFloatComplexesBoxed(reps:Int) = run(reps)(addFloatComplexesBoxed(fcs))
-  def timeAddFloatComplexesUnboxed(reps:Int) = run(reps)(addFloatComplexesUnboxed(longs))
 }
