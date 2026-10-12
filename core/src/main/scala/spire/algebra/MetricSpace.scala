@@ -1,36 +1,48 @@
-package spire.algebra
+/*
+ * **********************************************************************\
+ * * Project                                                              **
+ * *       ______  ______   __    ______    ____                          **
+ * *      / ____/ / __  /  / /   / __  /   / __/     (c) 2011-2021        **
+ * *     / /__   / /_/ /  / /   / /_/ /   / /_                            **
+ * *    /___  / / ____/  / /   / __  /   / __/   Erik Osheim, Tom Switzer **
+ * *   ____/ / / /      / /   / / | |   / /__                             **
+ * *  /_____/ /_/      /_/   /_/  |_|  /____/     All rights reserved.    **
+ * *                                                                      **
+ * *      Redistribution and use permitted under the MIT license.         **
+ * *                                                                      **
+ * \***********************************************************************
+ */
 
-import scala.{ specialized => spec }
+package spire
+package algebra
 
-trait MetricSpace[V, @spec(Int, Long, Float, Double) R] {
+/**
+ * This type class models a metric space `V`. The distance between 2 points in `V` is measured in `R`, which should be
+ * real (ie. `IsReal[R]` exists).
+ */
+trait MetricSpace[V, @sp(Int, Long, Float, Double) R] extends Any {
   def distance(v: V, w: V): R
 }
 
-object MetricSpace extends MetricSpace1 with MetricSpaceFunctions {
-  @inline final def apply[V, @spec(Int,Long,Float,Double) R](implicit V: MetricSpace[V, R]) = V
+object MetricSpace extends MetricSpace0 {
+  @inline final def apply[V, @sp(Int, Long, Float, Double) R](implicit V: MetricSpace[V, R]): MetricSpace[V, R] = V
+
+  def distance[V, @sp(Int, Long, Float, Double) R](v: V, w: V)(implicit metric: MetricSpace[V, R]): R =
+    metric.distance(v, w)
+
+  /**
+   * Returns `true` iff the distance between `x` and `y` is less than or equal to `tolerance`.
+   */
+  def closeTo[V, @sp(Int, Long, Float, Double) R](x: V, y: V, tolerance: Double)(implicit
+    R: IsReal[R],
+    metric: MetricSpace[V, R]
+  ): Boolean =
+    R.toDouble(metric.distance(x, y)) <= tolerance
 }
 
-trait MetricSpace0 {
-  implicit def realMetricSpace[V, @spec(Int,Long,Float,Double) R](implicit
-      V: MetricSpace[V, R], R: IsReal[R]) = new MetricSpace[V, Double] {
-    def distance(v: V, w: V): Double = R.toDouble(V.distance(v, w))
-  }
-}
-
-trait MetricSpace1 extends MetricSpace0 {
-  implicit def editDistance: MetricSpace[String, Int] = LevenshteinDistance
-
-  implicit def NormedVectorSpaceIsMetricSpace[V, @spec(Float,Double) R](implicit
-      V: NormedVectorSpace[V, R]): MetricSpace[V, R] = V
-}
-
-trait MetricSpaceFunctions {
-  def distance[V, @spec(Int,Long,Float,Double) R](v: V, w: V)(implicit
-    metric: MetricSpace[V, R]): R = metric.distance(v, w)
-
-  def closeTo[V, @spec(Int,Long,Float,Double) R](x: V, y: V, tolerance: Double)(implicit
-      R: IsReal[R], metric: MetricSpace[V, R]): Boolean = {
-    val d = R.toDouble(metric.distance(x, y))
-    d <= tolerance
-  }
+private[algebra] trait MetricSpace0 {
+  implicit def realMetricSpace[@sp(Int, Long, Float, Double) R](implicit R0: IsReal[R], R1: Rng[R]): MetricSpace[R, R] =
+    new MetricSpace[R, R] {
+      def distance(v: R, w: R): R = R0.abs(R1.minus(v, w))
+    }
 }

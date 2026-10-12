@@ -1,23 +1,33 @@
-package spire.benchmark
+/*
+ * **********************************************************************\
+ * * Project                                                              **
+ * *       ______  ______   __    ______    ____                          **
+ * *      / ____/ / __  /  / /   / __  /   / __/     (c) 2011-2021        **
+ * *     / /__   / /_/ /  / /   / /_/ /   / /_                            **
+ * *    /___  / / ____/  / /   / __  /   / __/   Erik Osheim, Tom Switzer **
+ * *   ____/ / / /      / /   / / | |   / /__                             **
+ * *  /_____/ /_/      /_/   /_/  |_|  /____/     All rights reserved.    **
+ * *                                                                      **
+ * *      Redistribution and use permitted under the MIT license.         **
+ * *                                                                      **
+ * \***********************************************************************
+ */
 
-import scala.{specialized => spec}
-import scala.annotation.tailrec
-
-import scala.util.Random
-import Random._
-
-import spire.algebra._
+package spire
+package benchmark
+import spire.implicits._
 import spire.math._
-import fpf._
 
-import com.google.caliper.Runner 
-import com.google.caliper.SimpleBenchmark
-import com.google.caliper.Param
+import java.util.concurrent.TimeUnit
 
-object JuliaBenchmarks extends MyRunner(classOf[JuliaBenchmarks])
+import org.openjdk.jmh.annotations._
 
-class JuliaBenchmarks extends MyBenchmark {
-  def mandelComplex(c: Complex[Double]): Int = {
+@BenchmarkMode(Array(Mode.AverageTime))
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
+@State(Scope.Thread)
+class JuliaBenchmarks {
+
+  def mandelComplex(c: Complex[Float]): Int = {
     var z = c
     var n = 1
     while (n < 80) {
@@ -28,36 +38,49 @@ class JuliaBenchmarks extends MyBenchmark {
     80
   }
 
-  def timeMandelComplex(reps:Int) = run(reps) {
-    var total = 0
-    var r = -2.0
-    var i = 0
-    while (i < 25) {
-      var c = -1.0
-      var j = 0
-      while (j < 20) {
-        total += mandelComplex(Complex(r, c))
-        c = c + 0.1
-        j += 1
-      }
-      r = r + 0.1
-      i += 1
-    }
-    total
-  }
-
   def mandelFloat(c: FloatComplex): Int = {
     var z = c
     var n = 1
     while (n < 80) {
-      if (z.abs > 2.0F) return n - 1
+      if (z.abs > 2.0f) return n - 1
       z = z * z + c
       n += 1
     }
     80
   }
 
-  def timeMandelFloat(reps:Int) = run(reps) {
+  def mandelFast(c: Long): Int = {
+    var z = c
+    var n = 1
+    while (n < 80) {
+      if (FastComplex.abs(z) > 2.0f) return n - 1
+      z = FastComplex.add(FastComplex.multiply(z, z), c)
+      n += 1
+    }
+    80
+  }
+
+  @Benchmark
+  def timeMandelComplex: Int = {
+    var total = 0
+    var r = -2.0f
+    var i = 0
+    while (i < 25) {
+      var c = -1.0f
+      var j = 0
+      while (j < 20) {
+        total += mandelComplex(Complex(r, c))
+        c = c + 0.1f
+        j += 1
+      }
+      r = r + 0.1f
+      i += 1
+    }
+    total
+  }
+
+  @Benchmark
+  def timeMandelFloat: Int = {
     var total = 0
     var r = -2.0
     var i = 0
@@ -75,18 +98,8 @@ class JuliaBenchmarks extends MyBenchmark {
     total
   }
 
-  def mandelFast(c: Long): Int = {
-    var z = c
-    var n = 1
-    while (n < 80) {
-      if (FastComplex.abs(z) > 2.0F) return n - 1
-      z = FastComplex.add(FastComplex.multiply(z, z), c)
-      n += 1
-    }
-    80
-  }
-
-  def timeMandelFast(reps: Int) = run(reps) {
+  @Benchmark
+  def timeMandelFast: Int = {
     var total = 0
     var r = -2.0
     var i = 0
@@ -103,4 +116,5 @@ class JuliaBenchmarks extends MyBenchmark {
     }
     total
   }
+
 }

@@ -1,38 +1,48 @@
-package spire.benchmark
+/*
+ * **********************************************************************\
+ * * Project                                                              **
+ * *       ______  ______   __    ______    ____                          **
+ * *      / ____/ / __  /  / /   / __  /   / __/     (c) 2011-2021        **
+ * *     / /__   / /_/ /  / /   / /_/ /   / /_                            **
+ * *    /___  / / ____/  / /   / __  /   / __/   Erik Osheim, Tom Switzer **
+ * *   ____/ / / /      / /   / / | |   / /__                             **
+ * *  /_____/ /_/      /_/   /_/  |_|  /____/     All rights reserved.    **
+ * *                                                                      **
+ * *      Redistribution and use permitted under the MIT license.         **
+ * *                                                                      **
+ * \***********************************************************************
+ */
 
-import scala.reflect.ClassTag
+package spire
+package benchmark
 
-import scala.annotation.tailrec
-import scala.{specialized => spec}
 import scala.util.Random
 import Random._
+import org.openjdk.jmh.annotations._
+import java.util.concurrent.TimeUnit
+import Arrays.init
 
-import spire.algebra._
-import spire.math._
 import spire.implicits._
-import fpf._
 
-import com.google.caliper.Runner 
-import com.google.caliper.SimpleBenchmark
-import com.google.caliper.Param
-
-import java.lang.Math
-import java.math.BigInteger
-import java.lang.Long.numberOfTrailingZeros
-
-object PowBenchmarks extends MyRunner(classOf[PowBenchmarks])
-
-class PowBenchmarks extends MyBenchmark {
+@BenchmarkMode(Array(Mode.AverageTime))
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
+@State(Scope.Thread)
+class PowBenchmarks {
 
   var longs: Array[Long] = null
   var ints: Array[Int] = null
+  var doubles: Array[Double] = null
 
-  override def setUp() {
-    ints = init(200000)(nextInt)
-    longs = init(200000)(nextLong)
+  @Setup
+  def setUp(): Unit = {
+    val l = 200000
+    ints = init(l)(nextInt)
+    longs = init(l)(nextLong)
+    doubles = init(l)(nextDouble)
   }
 
-  def timeLongPowForInt(reps:Int) = run(reps) {
+  @Benchmark
+  def timeLongPowForInt(): Int = {
     var t = 0
     ints.foreach { n =>
       t += spire.math.pow(n.toLong, 2.toLong).toInt
@@ -40,7 +50,8 @@ class PowBenchmarks extends MyBenchmark {
     t
   }
 
-  def timeDoublePowForInt(reps:Int) = run(reps) {
+  @Benchmark
+  def timeDoublePowForInt(): Int = {
     var t = 0
     ints.foreach { n =>
       t += spire.math.pow(n.toDouble, 2.0).toInt
@@ -48,15 +59,17 @@ class PowBenchmarks extends MyBenchmark {
     t
   }
 
-  def timeBigIntPowForInt(reps:Int) = run(reps) {
+  @Benchmark
+  def timeBigIntPowForInt(): Int = {
     var t = 0
     ints.foreach { n =>
-      t += (BigInt(n) pow 2).toInt
+      t += BigInt(n).pow(2).toInt
     }
     t
   }
 
-  def timeLongPowForLong(reps:Int) = run(reps) {
+  @Benchmark
+  def timeLongPowForLong(): Long = {
     var t = 0L
     longs.foreach { n =>
       t += spire.math.pow(n, 2L)
@@ -64,7 +77,8 @@ class PowBenchmarks extends MyBenchmark {
     t
   }
 
-  def timeDoublePowForLong(reps:Int) = run(reps) {
+  @Benchmark
+  def timeDoublePowForLong(): Long = {
     var t = 0L
     longs.foreach { n =>
       t += spire.math.pow(n.toDouble, 2.0).toLong
@@ -72,17 +86,19 @@ class PowBenchmarks extends MyBenchmark {
     t
   }
 
-  def timeBigIntPowForLong(reps:Int) = run(reps) {
+  @Benchmark
+  def timeBigIntPowForLong(): Long = {
     var t = 0L
     longs.foreach { n =>
-      t += (BigInt(n) pow 2).toLong
+      t += BigInt(n).pow(2).toLong
     }
     t
   }
 
-  def timeDoublePowForDouble(reps:Int) = run(reps) {
+  @Benchmark
+  def timeDoublePowForDouble(): Double = {
     var t = 0.0
-    longs.foreach { n =>
+    doubles.foreach { n =>
       t += spire.math.pow(n, 2.0)
     }
     t

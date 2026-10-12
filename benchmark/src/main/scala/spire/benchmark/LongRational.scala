@@ -1,8 +1,22 @@
-package spire.benchmark
+/*
+ * **********************************************************************\
+ * * Project                                                              **
+ * *       ______  ______   __    ______    ____                          **
+ * *      / ____/ / __  /  / /   / __  /   / __/     (c) 2011-2021        **
+ * *     / /__   / /_/ /  / /   / /_/ /   / /_                            **
+ * *    /___  / / ____/  / /   / __  /   / __/   Erik Osheim, Tom Switzer **
+ * *   ____/ / / /      / /   / / | |   / /__                             **
+ * *  /_____/ /_/      /_/   /_/  |_|  /____/     All rights reserved.    **
+ * *                                                                      **
+ * *      Redistribution and use permitted under the MIT license.         **
+ * *                                                                      **
+ * \***********************************************************************
+ */
 
-import spire.algebra._
+package spire
+package benchmark
+
 import spire.implicits._
-import spire.math._
 
 object LongRational {
   val Zero = new LongRational(0, 1)
@@ -23,7 +37,7 @@ object LongRational {
 final class LongRational private (val n: Long, val d: Long) {
   import LongRational.gcd
 
-  def unary_-(): LongRational = new LongRational(-n, d)
+  def unary_- : LongRational = new LongRational(-n, d)
 
   def +(r: LongRational): LongRational = {
     val dgcd: Long = gcd(d, r.d)
@@ -41,7 +55,6 @@ final class LongRational private (val n: Long, val d: Long) {
     }
   }
 
-
   def -(r: LongRational): LongRational = {
     val dgcd: Long = gcd(d, r.d)
     if (dgcd == 1) {
@@ -58,13 +71,11 @@ final class LongRational private (val n: Long, val d: Long) {
     }
   }
 
-
   def *(r: LongRational): LongRational = {
     val a = gcd(n, r.d)
     val b = gcd(d, r.n)
     new LongRational((n / a) * (r.n / b), (d / b) * (r.d / a))
   }
-  
 
   def /(r: LongRational): LongRational = {
     val a = gcd(n, r.n)
@@ -81,20 +92,18 @@ final class LongRational private (val n: Long, val d: Long) {
   def pow(exp: Int): LongRational = if (exp == 0) {
     LongRational.One
   } else if (exp < 0) {
-    new LongRational(d pow java.lang.Math.abs(exp), n pow java.lang.Math.abs(exp))
+    new LongRational(d.pow(java.lang.Math.abs(exp)), n.pow(java.lang.Math.abs(exp)))
   } else {
-    new LongRational(n pow exp, d pow exp)
+    new LongRational(n.pow(exp), d.pow(exp))
   }
 
   def compare(r: LongRational): Int = {
     val dgcd = gcd(d, r.d)
     if (dgcd == 1)
-      java.lang.Math.signum(n * r.d - r.n * d).toInt
+      java.lang.Math.signum(n * r.d.toFloat - r.n * d).toInt
     else
-      java.lang.Math.signum((r.d / dgcd) * n - (d / dgcd) * r.n).toInt
+      java.lang.Math.signum((r.d / dgcd) * n.toFloat - (d / dgcd) * r.n).toInt
   }
 
   def signum: Int = if (n < 0) -1 else if (n > 0) 1 else 0
 }
-
-

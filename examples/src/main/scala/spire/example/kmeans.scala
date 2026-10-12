@@ -1,31 +1,40 @@
-package spire.example
+/*
+ * **********************************************************************\
+ * * Project                                                              **
+ * *       ______  ______   __    ______    ____                          **
+ * *      / ____/ / __  /  / /   / __  /   / __/     (c) 2011-2021        **
+ * *     / /__   / /_/ /  / /   / /_/ /   / /_                            **
+ * *    /___  / / ____/  / /   / __  /   / __/   Erik Osheim, Tom Switzer **
+ * *   ____/ / / /      / /   / / | |   / /__                             **
+ * *  /_____/ /_/      /_/   /_/  |_|  /____/     All rights reserved.    **
+ * *                                                                      **
+ * *      Redistribution and use permitted under the MIT license.         **
+ * *                                                                      **
+ * \***********************************************************************
+ */
+
+package spire
+package example
 
 import spire.algebra._
-import spire.math._
 import spire.implicits._
-import spire.syntax._
+import scala.collection.Factory
 
-import scala.collection.generic.CanBuildFrom
-import scala.reflect.ClassTag
-import scala.{ specialized => spec }
-import scala.util.Random.{ nextInt, nextDouble, nextGaussian }
-import scala.annotation.tailrec
+import scala.util.Random.{nextDouble, nextGaussian, nextInt}
 
 /**
- * An example using `NormedVectorSpace`s to create a generic k-Means
- * implementation. We also abstract over the collection type for the fun of it.
- * We implement Lloyd's algorithm, which has problems of its own, but performs
- * well enough.
+ * An example using `NormedVectorSpace`s to create a generic k-Means implementation. We also abstract over the
+ * collection type for the fun of it. We implement Lloyd's algorithm, which has problems of its own, but performs well
+ * enough.
  */
 object KMeansExample extends App {
 
   /**
-   * Returns a collection of k points which are the centers of k clusters of
-   * `points0`.
+   * Returns a collection of k points which are the centers of k clusters of `points0`.
    */
-  def kMeans[V, @spec(Double) A, CC[V] <: Iterable[V]](points0: CC[V], k: Int)(implicit
-      vs: NormedVectorSpace[V, A], order: Order[A],
-      cbf: CanBuildFrom[Nothing, V, CC[V]], ct: ClassTag[V]): CC[V] = {
+  def kMeans[V, @sp(Double) A, CC[V] <: Iterable[V]](points0: CC[V],
+                                                     k: Int
+  )(implicit vs: NormedVectorSpace[V, A], order: Order[A], cbf: Factory[V, CC[V]], ct: ClassTag[V]): CC[V] = {
 
     val points = points0.toArray
 
@@ -79,13 +88,13 @@ object KMeansExample extends App {
     // Our seed points are chosen rather naively. However, the points below are
     // generated randomly, so we don't need to worry about being too smart here.
 
-    val init: Array[V] = points take k
+    val init: Array[V] = points.take(k)
     val clusters = loop(assign(init), init)
 
     // We work with arrays above, but turn it into the collection type the user
     // wants before we return the clusters.
 
-    val bldr = cbf()
+    val bldr = cbf.newBuilder
     cfor(0)(_ < clusters.length, _ + 1) { i =>
       bldr += clusters(i)
     }
@@ -95,23 +104,24 @@ object KMeansExample extends App {
   // This method let's us generate a set of n points which are clustered around
   // k centers in d-dimensions.
 
-  def genPoints[CC[_], V, @spec(Double) A](d: Int, k: Int, n: Int)(f: Array[Double] => V)(implicit
-      vs: VectorSpace[V, A], cbf: CanBuildFrom[Nothing, V, CC[V]]): CC[V] = {
+  def genPoints[CC[_], V, @sp(Double) A](d: Int, k: Int, n: Int)(
+    f: Array[Double] => V
+  )(implicit vs: VectorSpace[V, A], cbf: Factory[V, CC[V]]): CC[V] = {
 
-    def randPoint(gen: => Double): V = f((1 to d).map(_ => gen)(collection.breakOut))
+    def randPoint(gen: => Double): V = f((1 to d).map(_ => gen).toArray)
 
-    val centers: Vector[V] = (1 to k).map({ _ =>
+    val centers: Vector[V] = (1 to k).map { _ =>
       randPoint(nextDouble() * 10)
-    })(collection.breakOut)
+    }.toVector
 
-    val bldr = cbf()
+    val bldr = cbf.newBuilder
     cfor(0)(_ < n, _ + 1) { _ =>
-      bldr += centers(nextInt(k)) + randPoint(nextGaussian)
+      bldr += centers(nextInt(k)) + randPoint(nextGaussian())
     }
     bldr.result()
   }
 
-  implicit val mc = java.math.MathContext.DECIMAL128
+  implicit val mc: java.math.MathContext = java.math.MathContext.DECIMAL128
 
   // We construct 3 sets of points, each using different VectorSpaces. We'll
   // cluster each one, using the same k-means algorithm.

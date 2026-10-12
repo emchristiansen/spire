@@ -1,37 +1,87 @@
-package spire.algebra
+/*
+ * **********************************************************************\
+ * * Project                                                              **
+ * *       ______  ______   __    ______    ____                          **
+ * *      / ____/ / __  /  / /   / __  /   / __/     (c) 2011-2021        **
+ * *     / /__   / /_/ /  / /   / /_/ /   / /_                            **
+ * *    /___  / / ____/  / /   / __  /   / __/   Erik Osheim, Tom Switzer **
+ * *   ____/ / / /      / /   / / | |   / /__                             **
+ * *  /_____/ /_/      /_/   /_/  |_|  /____/     All rights reserved.    **
+ * *                                                                      **
+ * *      Redistribution and use permitted under the MIT license.         **
+ * *                                                                      **
+ * \***********************************************************************
+ */
 
-import spire.math._
+package spire
+package algebra
 
-import scala.{ specialized => spec }
+import spire.math.{Algebraic, Rational, Real}
 
 /**
- * A simple class for numeric types that are a subset of the reals.
+ * A simple type class for numeric types that are a subset of the reals.
  */
-trait IsReal[@spec A] {
+trait IsReal[@sp A] extends Any with Order[A] with Signed[A] {
+
+  /**
+   * Rounds `a` the nearest integer that is greater than or equal to `a`.
+   */
+  def ceil(a: A): A
+
+  /**
+   * Rounds `a` the nearest integer that is less than or equal to `a`.
+   */
+  def floor(a: A): A
+
+  /**
+   * Rounds `a` to the nearest integer.
+   */
+  def round(a: A): A
+
+  /**
+   * Returns `true` iff `a` is a an integer.
+   */
+  def isWhole(a: A): Boolean
+
+  /**
+   * Approximates `a` as a `Double`.
+   */
   def toDouble(a: A): Double
+
+  def toReal(a: A): Real
 }
 
 object IsReal {
-  def apply[@spec A](implicit A: IsReal[A]): IsReal[A] = A
+  def apply[@sp A](implicit A: IsReal[A]): IsReal[A] = A
+}
 
-  private def apply[@spec A](f: A => Double) = new IsReal[A] {
-    def toDouble(a: A) = f(a)
-  }
+trait IsAlgebraic[@sp A] extends Any with IsReal[A] {
+  def toAlgebraic(a: A): Algebraic
+  def toReal(a: A): Real = toAlgebraic(a).toReal
+}
 
-  implicit val ByteIsReal = IsReal[Byte] { x: Byte => x.toDouble }
-  implicit val ShortIsReal = IsReal[Short] { x: Short => x.toDouble }
-  implicit val IntIsReal = IsReal[Int] { x: Int => x.toDouble }
-  implicit val LongIsReal = IsReal[Long] { x: Long => x.toDouble }
-  implicit val BigIntIsReal = IsReal[BigInt] { x: BigInt => x.toDouble }
-  implicit val UByteIsReal = IsReal[UByte] { x: UByte => x.toDouble }
-  implicit val UShortIsReal = IsReal[UShort] { x: UShort => x.toDouble }
-  implicit val UIntIsReal = IsReal[UInt] { x: UInt => x.toDouble }
-  implicit val ULongIsReal = IsReal[ULong] { x: ULong => x.toDouble }
-  implicit val FloatIsReal = IsReal[Float] { x: Float => x.toDouble }
-  implicit val DoubleIsReal = IsReal[Double] { x: Double => x.toDouble }
-  implicit val RationalIsReal = IsReal[Rational] { x: Rational => x.toDouble }
-  implicit val RealIsReal = IsReal[Real] { x: Real => x.toDouble }
-  implicit val BigDecimalIsReal = IsReal[BigDecimal] { x: BigDecimal => x.toDouble }
-  implicit val SafeLongIsReal = IsReal[SafeLong] { x: SafeLong => x.toDouble }
-  implicit val NaturalIsReal = IsReal[Natural] { x: Natural => x.toDouble }
+object IsAlgebraic {
+  def apply[@sp A](implicit A: IsAlgebraic[A]): IsAlgebraic[A] = A
+}
+
+trait IsRational[A] extends Any with IsAlgebraic[A] {
+  def toRational(a: A): Rational
+  def toAlgebraic(a: A): Algebraic = Algebraic(toRational(a))
+}
+
+object IsRational {
+  def apply[A](implicit A: IsRational[A]): IsRational[A] = A
+}
+
+trait IsIntegral[A] extends Any with IsRational[A] {
+  def ceil(a: A): A = a
+  def floor(a: A): A = a
+  def round(a: A): A = a
+  def isWhole(a: A): Boolean = true
+  def toBigInt(a: A): BigInt
+  def toRational(a: A): Rational = Rational(toBigInt(a))
+}
+
+object IsIntegral {
+  def apply[A](implicit A: IsIntegral[A]): IsIntegral[A] = A
 }

@@ -1,38 +1,55 @@
-package spire.benchmark
+/*
+ * **********************************************************************\
+ * * Project                                                              **
+ * *       ______  ______   __    ______    ____                          **
+ * *      / ____/ / __  /  / /   / __  /   / __/     (c) 2011-2021        **
+ * *     / /__   / /_/ /  / /   / /_/ /   / /_                            **
+ * *    /___  / / ____/  / /   / __  /   / __/   Erik Osheim, Tom Switzer **
+ * *   ____/ / / /      / /   / / | |   / /__                             **
+ * *  /_____/ /_/      /_/   /_/  |_|  /____/     All rights reserved.    **
+ * *                                                                      **
+ * *      Redistribution and use permitted under the MIT license.         **
+ * *                                                                      **
+ * \***********************************************************************
+ */
 
-import scala.{specialized => spec}
+package spire
+package benchmark
+
 import scala.util.Random
 import Random._
 
-import spire.algebra._
 import spire.math._
 import spire.implicits._
-import fpf._
 
-import com.google.caliper.Runner 
-import com.google.caliper.SimpleBenchmark
-import com.google.caliper.Param
+import java.util.concurrent.TimeUnit
+
+import org.openjdk.jmh.annotations._
 
 import org.apfloat._
 
 import org.jscience.mathematics.number
 
-object RatComparisonBenchmarks extends MyRunner(classOf[RatComparisonBenchmarks])
+import Arrays.init
 
-class RatComparisonBenchmarks extends MyBenchmark {
+@BenchmarkMode(Array(Mode.AverageTime))
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
+@State(Scope.Thread)
+class RatComparisonBenchmarks {
   @Param(Array("100"))
-  var size:Int = 0
+  var size: Int = 0
 
-  var spires:Array[Rational] = null
-  var aps:Array[Aprational] = null
-  var jscis:Array[number.Rational] = null
+  var spires: Array[Rational] = null
+  var aps: Array[Aprational] = null
+  var jscis: Array[number.Rational] = null
 
-  var nums:Array[Int] = null
-  var denoms:Array[Int] = null
+  var nums: Array[Int] = null
+  var denoms: Array[Int] = null
 
-  override protected def setUp() {
-    nums = init(size)(nextInt)
-    denoms = init(size)(nextInt)
+  @Setup
+  def setup(): Unit = {
+    nums = init(size)(nextInt())
+    denoms = init(size)(nextInt())
 
     spires = new Array[Rational](size)
     aps = new Array[Aprational](size)
@@ -50,23 +67,23 @@ class RatComparisonBenchmarks extends MyBenchmark {
     if (false) assert(verify())
   }
 
-  def spireToAp(r:Rational) = new Aprational(
-    new Apint(r.numerator.bigInteger),
-    new Apint(r.denominator.bigInteger)
+  def spireToAp(r: Rational): Aprational = new Aprational(
+    new Apint(r.numerator.toBigInt.bigInteger),
+    new Apint(r.denominator.toBigInt.bigInteger)
   )
 
-  def spireToJsci(r:Rational) = number.Rational.valueOf(
-    number.LargeInteger.valueOf(r.numerator.bigInteger),
-    number.LargeInteger.valueOf(r.denominator.bigInteger)
+  def spireToJsci(r: Rational): number.Rational = number.Rational.valueOf(
+    number.LargeInteger.valueOf(r.numerator.toBigInt.bigInteger),
+    number.LargeInteger.valueOf(r.denominator.toBigInt.bigInteger)
   )
 
   // this is slow... it probably takes as long as one full run of the benchmark
-  def verify() = {
+  def verify(): Boolean = {
     val len = size
     var i = 0
 
-    var t1 = Rational(0, 1)
-    var t2 = new Aprational(new Apint(0), new Apint(1))
+    val t1 = Rational(0, 1)
+    val t2 = new Aprational(new Apint(0), new Apint(1))
     val t3 = number.Rational.valueOf(
       number.LargeInteger.valueOf(0),
       number.LargeInteger.valueOf(1)
@@ -77,27 +94,28 @@ class RatComparisonBenchmarks extends MyBenchmark {
       val a = aps(i)
       val j = jscis(i)
 
-      // compare r and a 
+      // compare r and a
       if (spireToAp(r) != a)
-        sys.error("items %s and %s differ" format (r, a))
+        sys.error("items %s and %s differ".format(r, a))
       if (spireToJsci(r) != j)
-        sys.error("items %s and %s differ" format (r, j))
+        sys.error("items %s and %s differ".format(r, j))
 
       // compare running totals
       val x = t1 + r
       val y = t2.add(a)
       val z = t3.plus(j)
       if (spireToAp(x) != y)
-        sys.error("totals %s and %s differ (from %s)" format (x, y, t2))
+        sys.error("totals %s and %s differ (from %s)".format(x, y, t2))
       if (spireToJsci(x) != z)
-        sys.error("totals %s and %s differ (from %s)" format (x, z, t3))
+        sys.error("totals %s and %s differ (from %s)".format(x, z, t3))
 
       i += 1
     }
     true
   }
 
-  def timeBuildSpire(reps:Int) = run(reps) {
+  @Benchmark
+  def timeBuildSpire: Int = {
     val len = size
     val ns = Array.ofDim[Rational](len)
     var i = 0
@@ -108,7 +126,8 @@ class RatComparisonBenchmarks extends MyBenchmark {
     ns.length
   }
 
-  def timeBuildAp(reps:Int) = run(reps) {
+  @Benchmark
+  def timeBuildAp: Int = {
     val len = size
     val ns = Array.ofDim[Aprational](len)
     var i = 0
@@ -119,7 +138,8 @@ class RatComparisonBenchmarks extends MyBenchmark {
     ns.length
   }
 
-  def timeBuildJsci(reps:Int) = run(reps) {
+  @Benchmark
+  def timeBuildJsci: Int = {
     val len = size
     val ns = Array.ofDim[number.Rational](len)
     var i = 0
@@ -133,15 +153,17 @@ class RatComparisonBenchmarks extends MyBenchmark {
     ns.length
   }
 
-  def timeSumSpire(reps:Int) = run(reps) {
+  @Benchmark
+  def timeSumSpire: Rational = {
     val len = size
     var total = Rational(0, 1)
     var i = 0
     while (i < len) { total += spires(i); i += 1 }
     total
   }
-  
-  def timeSumAp(reps:Int) = run(reps) {
+
+  @Benchmark
+  def timeSumAp: Aprational = {
     val len = size
     var total = new Aprational(new Apint(0), new Apint(1))
     var i = 0
@@ -149,11 +171,12 @@ class RatComparisonBenchmarks extends MyBenchmark {
     total
   }
 
-  def timeSumJsci(reps:Int) = run(reps) {
+  def timeSumJsci: number.Rational = {
     val len = size
     var total = number.Rational.ZERO
     var i = 0
     while (i < len) { total = total.plus(jscis(i)); i += 1 }
     total
   }
+
 }
